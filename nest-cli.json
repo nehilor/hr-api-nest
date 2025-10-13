@@ -1,0 +1,10 @@
+{
+  "name": "hr-api-nest",
+  "version": "1.0.0",
+  "description": "HR Management API built with NestJS",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true
+  }
+}
