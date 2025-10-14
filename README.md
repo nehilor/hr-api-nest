@@ -30,6 +30,12 @@ A production-ready HR management API built with NestJS, Prisma, PostgreSQL, and 
 
 ## Quick Start
 
+### Prerequisites Check
+Make sure you have:
+- Node.js 18+ LTS installed
+- pnpm installed (`npm install -g pnpm`)
+- Docker installed (for database)
+
 ### 1. Setup Database
 
 Using Docker (recommended):
@@ -49,9 +55,9 @@ pnpm run db:up
 
 ### 2. Environment Configuration
 
-Copy the example environment file:
+Create a `.env` file in the root directory:
 ```bash
-cp .env.example .env
+touch .env
 ```
 
 Update `.env` with your configuration:
@@ -62,6 +68,7 @@ JWT_EXPIRES_IN="1h"
 PORT=4000
 NODE_ENV="development"
 CORS_ORIGIN="http://localhost:3000"
+SENTRY_DSN="https://your-dsn@sentry.io/project-id"
 ```
 
 ### 3. Install Dependencies
@@ -94,6 +101,28 @@ pnpm run dev
 ```
 
 The API will be available at `http://localhost:4000`
+
+## Testing the API
+
+### Health Check
+Test if the API is running:
+```bash
+curl http://localhost:4000/api/health
+```
+
+### Test Login
+```bash
+curl -X POST http://localhost:4000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@hrapp.com", "password": "admin123"}'
+```
+
+### Test People Endpoint (requires token)
+```bash
+# First get a token from login, then use it:
+curl -X GET http://localhost:4000/api/people \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
 
 ## Default Users
 
