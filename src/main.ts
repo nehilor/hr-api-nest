@@ -45,6 +45,7 @@ async function bootstrap() {
       .setTitle('Monitoring API')
       .setDescription('Application Monitoring API documentation')
       .setVersion('1.0')
+      .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('docs', app, document);

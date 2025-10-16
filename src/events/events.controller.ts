@@ -8,8 +8,10 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
 import { EventsService } from './events.service';
 import { CreateEventDto, EventResponseDto } from './events.dto';
 
@@ -54,9 +56,11 @@ export class EventsController {
   }
 
   @Get()
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get all events',
-    description: 'Retrieve all events from all projects'
+    description: 'Retrieve all events from all projects (requires authentication)'
   })
   @ApiResponse({
     status: 200,
@@ -81,9 +85,11 @@ export class EventsController {
   }
 
   @Get(':id')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get event by ID',
-    description: 'Retrieve a specific event by its ID'
+    description: 'Retrieve a specific event by its ID (requires authentication)'
   })
   @ApiResponse({
     status: 200,
