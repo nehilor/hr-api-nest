@@ -1,13 +1,10 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
+import { Controller, Get } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
 import * as Sentry from '@sentry/node';
 
 @ApiTags('Monitoring')
 @Controller('monitoring')
-@UseGuards(AuthGuard('jwt'))
-@ApiBearerAuth()
 export class MonitoringController {
   constructor(private readonly prisma: PrismaService) {}
 
@@ -47,16 +44,16 @@ export class MonitoringController {
   async getMetrics() {
     try {
       // Get basic metrics from database
-      const [userCount, peopleCount] = await Promise.all([
-        this.prisma.user.count(),
-        this.prisma.person.count(),
+      const [projectCount, eventCount] = await Promise.all([
+        this.prisma.project.count(),
+        this.prisma.event.count(),
       ]);
 
       return {
         timestamp: new Date().toISOString(),
         metrics: {
-          users: userCount,
-          people: peopleCount,
+          projects: projectCount,
+          events: eventCount,
           uptime: process.uptime(),
           memory: process.memoryUsage(),
         },
@@ -68,30 +65,42 @@ export class MonitoringController {
   }
 
   @Get('errors')
-  @ApiOperation({ summary: 'Get recent errors (mock data)' })
+  @ApiOperation({ summary: 'Get recent errors from events table' })
   @ApiResponse({ status: 200, description: 'Recent errors retrieved' })
   async getRecentErrors() {
-    // In a real implementation, this would query from your error storage
-    // For now, we'll return mock data
-    return {
-      timestamp: new Date().toISOString(),
-      errors: [
-        {
-          id: '1',
-          message: 'Database connection timeout',
-          level: 'error',
-          timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 minutes ago
-          count: 3,
+    try {
+      // Get recent events from all projects
+      const recentEvents = await this.prisma.event.findMany({
+        orderBy: { lastSeen: 'desc' },
+        take: 10,
+        include: {
+          project: {
+            select: {
+              name: true,
+            },
+          },
         },
-        {
-          id: '2',
-          message: 'Invalid JWT token',
-          level: 'warning',
-          timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(), // 10 minutes ago
-          count: 1,
-        },
-      ],
-    };
+      });
+
+      const errors = recentEvents.map(event => ({
+        id: event.id,
+        message: event.title,
+        level: 'error',
+        timestamp: event.lastSeen.toISOString(),
+        count: event.count,
+        project: event.project.name,
+        environment: event.environment,
+        url: event.url,
+      }));
+
+      return {
+        timestamp: new Date().toISOString(),
+        errors,
+      };
+    } catch (error) {
+      Sentry.captureException(error);
+      throw error;
+    }
   }
 
   @Get('performance')
@@ -123,5 +132,37 @@ export class MonitoringController {
         ],
       },
     };
+  }
+
+  @Get('projects')
+  @ApiOperation({ summary: 'Get all monitoring projects' })
+  @ApiResponse({ status: 200, description: 'Projects retrieved' })
+  async getProjects() {
+    try {
+      const projects = await this.prisma.project.findMany({
+        include: {
+          _count: {
+            select: {
+              events: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return {
+        timestamp: new Date().toISOString(),
+        projects: projects.map(project => ({
+          id: project.id,
+          name: project.name,
+          apiKey: project.apiKey.substring(0, 8) + '...', // Mask API key
+          eventCount: project._count.events,
+          createdAt: project.createdAt,
+        })),
+      };
+    } catch (error) {
+      Sentry.captureException(error);
+      throw error;
+    }
   }
 }
