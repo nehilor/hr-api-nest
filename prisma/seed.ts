@@ -4,7 +4,6 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Starting seed...');
 
   // Create admin user
   const hashedPassword = await bcrypt.hash('admin123', 10);
@@ -61,17 +60,11 @@ async function main() {
     });
   }
 
-  console.log('Seed completed successfully');
-  console.log('Created admin user:');
-  console.log(`- Email: ${adminUser.email} (Password: admin123)`);
-  console.log('Created monitoring project:');
-  console.log(`- Project: ${sampleProject.name} (API Key: ${sampleProject.apiKey})`);
-  console.log(`- Created ${sampleEvents.length} sample events`);
+  // Seed completed successfully
 }
 
 main()
   .catch((e) => {
-    console.error(e);
     process.exit(1);
   })
   .finally(async () => {
